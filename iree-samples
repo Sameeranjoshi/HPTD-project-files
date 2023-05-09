@@ -1,0 +1,184 @@
+IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/iree
+IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/
+LLVM_BUILD_DIR=/scratch/general/vast/u1418973/iree-common-build/build/llvm-project
+
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+   export LLVM_BUILD_DIR=/scratch/general/vast/u1418973/iree-common-build/build/llvm-project; \
+
+
+
+#WORKED 
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/tmp/u1418973/iree-samples/; \
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/pointwise.mlir |\
+   sed "s/\${SZ1}/4096/g" | sed "s/\${SZ2}/1/g" | \
+   sed "s/private @pointwise_1d_static(/@pointwise_1d_static(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/pointwise_iree_pipeline_spec.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+
+
+
+
+# WORKED
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/matmul.mlir |\
+   sed "s/\${M}/3456/g" | sed "s/\${K}/1024/g" | sed "s/\${N}/2048/g" | \
+   sed "s/private @fill_matmul_static(/@fill_matmul_static(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/matmul_codegen_spec_step_02_pad_shared_wmma_async_pipelined_mapped.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+
+# WORKED
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/matmul.mlir |\
+   sed "s/\${M}/1024/g" | sed "s/\${N}/4096/g" | sed "s/\${K}/2048/g" | \
+   sed "s/private @matmul_static(/@matmul_static(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/matmul_codegen_spec_step_01_wmma_ops.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+
+# FAILED WIP - https://github.com/nicolasvasilache/iree/tree/matmul-unaligned
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/matmul.mlir |\
+   sed "s/\${M}/1/g" | sed "s/\${K}/1/g" | sed "s/\${N}/1/g" | \
+   sed "s/private @matmul_dynamic(/@matmul_dynamic(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/matmul_dynamic_codegen_spec_pad_shared_wmma_async_pipelined_mapped.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+
+# FAILED - lower_masked_transfers
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \   
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/matmul.mlir |\
+   sed "s/\${M}/3452/g" | sed "s/\${N}/1020/g" | sed "s/\${K}/2044/g" | \
+   sed "s/private @matmul_static(/@matmul_static(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/matmul_unaligned_codegen_spec_mma_sync.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+# FAILED WIP - lower_masked_transfers missing
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/matmul.mlir |\
+   sed "s/\${M}/3455/g" | sed "s/\${K}/1023/g" | sed "s/\${N}/2047/g" | \
+   sed "s/private @matmul_static(/@matmul_static(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/matmul_unaligned_codegen_spec_step_02_pad_shared_wmma_async_pipelined_mapped_vector_1.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+#WORKED CPU - CONV
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+    cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/conv_2d_nchw_fchw.mlir |\
+    sed "s/\${N}/16/g" | sed "s/\${C}/128/g" | sed "s/\${F}/256/g" | \
+    sed "s/\${H}/42/g" | sed "s/\${W}/68/g" | \
+    sed "s/\${KH}/3/g" | sed "s/\${KW}/3/g" | \
+    sed "s/\${OH}/40/g" | sed "s/\${OW}/66/g" | \
+    ${IREE_DIR}/build/tools/iree-opt \
+      --iree-hal-target-backends=cuda \
+      --iree-abi-transformation-pipeline \
+      --iree-flow-transformation-pipeline \
+      --iree-stream-transformation-pipeline \
+      --iree-hal-configuration-pipeline | \
+    ${IREE_DIR}/build/tools/iree-opt \
+       --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+       --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cpu/conv_2d_nchw_fchw_codegen_spec.mlir \
+       --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+# WORKED - conv
+
+
+   export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+   export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \
+    cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/conv_2d_nchw_fchw.mlir |\
+    sed "s/\${N}/16/g" | sed "s/\${C}/16/g" | sed "s/\${F}/64/g" | \
+    sed "s/\${H}/132/g" | sed "s/\${W}/132/g" | \
+    sed "s/\${KH}/3/g" | sed "s/\${KW}/3/g" | \
+    sed "s/\${OH}/130/g" | sed "s/\${OW}/130/g" | \
+    ${IREE_DIR}/build/tools/iree-opt \
+      --iree-hal-target-backends=cuda \
+      --iree-abi-transformation-pipeline \
+      --iree-flow-transformation-pipeline \
+      --iree-stream-transformation-pipeline \
+      --iree-hal-configuration-pipeline | \
+    ${IREE_DIR}/build/tools/iree-opt \
+       --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+       --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/conv_2d_nchw_fchw_codegen_spec_step_01_wmma_ops.mlir \
+       --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+
+#  WORKED
+  export IREE_DIR=/scratch/general/vast/u1418973/iree-common-build/; \
+  export IREE_SAMPLES_DIR=/scratch/general/vast/u1418973/iree-samples/; \   
+   cat ${IREE_SAMPLES_DIR}/transform_dialect/examples/copy.mlir |\
+   sed "s/\${M}/5/g" |\
+   sed "s/private @copy_1d_static(/@copy_1d_static(/g" | \
+   ${IREE_DIR}/build/tools/iree-opt \
+     --iree-hal-target-backends=cuda \
+     --iree-abi-transformation-pipeline \
+     --iree-flow-transformation-pipeline \
+     --iree-stream-transformation-pipeline \
+     --iree-hal-configuration-pipeline | \
+   ${IREE_DIR}/build/tools/iree-opt \
+      --pass-pipeline='builtin.module(hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' \
+      --iree-codegen-llvmgpu-use-transform-dialect=${IREE_SAMPLES_DIR}/transform_dialect/examples/cuda/copy_1d_codegen_spec.mlir \
+      --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
