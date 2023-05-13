@@ -1,0 +1,32 @@
+// Edit CE, with path to compiler you want.
+// build CE.
+
+// ssh -L 10240:localhost:10240 sameeran@155.98.69.104
+
+// Open CE in Browser.
+
+// Flags
+//  --iree-hal-target-backends=cuda  --pass-pipeline='builtin.module(iree-abi-transformation-pipeline, iree-flow-transformation-pipeline, iree-stream-transformation-pipeline, iree-hal-configuration-pipeline,  iree-transform-dialect-interpreter,hal.executable(hal.executable.variant(iree-llvmgpu-lower-executable-target)))' --iree-codegen-llvmgpu-enable-transform-dialect-jit=false
+
+
+// Input
+
+!A_t = tensor<3456x1024xf32>
+!B_t = tensor<1024x2048xf32>
+!C_t = tensor<3456x2048xf32>
+
+func.func @matmul_static(
+    %A : !A_t, %B : !B_t, %C : !C_t) -> !C_t {
+  %0 = linalg.matmul ins(%A, %B : !A_t, !B_t)
+                     outs(%C : !C_t) -> !C_t
+  return %0 : !C_t
+}
+
+
+transform.sequence failures(propagate) {
+^bb1(%variant_op: !pdl.operation):
+  %matmul = transform.structured.match ops{["linalg.matmul"]} in %variant_op
+    : (!pdl.operation) -> !pdl.operation
+transform.iree.apply_patterns %variant_op
+    {canonicalization, cse, licm, tiling_canonicalization} : (!pdl.operation) -> ()
+}
