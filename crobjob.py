@@ -44,9 +44,16 @@ def download_pre_release(release):
                 # Compare the versions of the local tar file and the tar file on GitHub
                 if compare_versions(local_tar_path, download_url):
                     # Versions are different, download the tar file
+                    # Local tar file does not exist, download the tar file
+                    rm_tar = f"rm -rf lib/ bin/ iree*.tar.xz compiler-explorer/"
+                    os.system(rm_tar)
+
                     print(f"Downloading tar file: {download_url}")
                     wget = f"wget {download_url} -O {local_tar_path}"
                     os.system(wget)
+                    untar = f"tar -xvf {local_tar_path}"
+                    os.system(untar)
+                  
                 else:
                     print("Local tar file is up to date.")
             else:
@@ -138,11 +145,11 @@ def change_compiler_explorer_with_iree_compiler(path):
     old_line = "compiler.mliropt14.exe=/usr/bin/mlir-opt-14"
     # Specify the new line
     new_line = f"compiler.mliropt14.exe={path}"
-
+    
     # Read the contents of the file
     with open(file_path, "r") as f:
         lines = f.readlines()
-
+    
     # Replace the old line with the new line
     with open(file_path, "w") as f:
         for line in lines:
@@ -164,5 +171,4 @@ check_new_pre_release()
 get_compiler_explorer()
 change_compiler_explorer_with_iree_compiler("/home/sameeran/workspace/SANDBOX/compiler_explorer_cron_iree/bin/")
 make_compiler_explorer()
-
 
