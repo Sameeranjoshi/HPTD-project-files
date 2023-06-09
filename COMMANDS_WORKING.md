@@ -30,6 +30,7 @@ transform.sequence failures(propagate) {
 ^bb1(%variant_op: !transform.any_op):
 %0 = transform.structured.match ops{["linalg.matmul"]} in %variant_op : (!transform.any_op) -> !transform.any_op
 %1, %2 = transform.structured.tile_to_forall_op %0 tile_sizes [128, 128] { mapping = [#gpu.block<y>,#gpu.block<x>] }: (!transform.any_op) -> (!transform.any_op, !transform.any_op)
+transform.iree.apply_patterns %variant_op {canonicalization, cse, licm, tiling_canonicalization} : (!transform.any_op) -> ()
 transform.iree.populate_workgroup_count_region_using_num_threads_slice %1 : (!transform.any_op) -> ()
 %3 = transform.structured.match ops{["linalg.matmul"]} in %variant_op : (!transform.any_op) -> !transform.any_op
 %4, %5 = transform.structured.tile %3 [0, 0, 16] : (!transform.any_op) -> (!transform.any_op, !transform.any_op)
@@ -37,18 +38,23 @@ transform.iree.populate_workgroup_count_region_using_num_threads_slice %1 : (!tr
 %7 = transform.get_producer_of_operand %6[2] : (!transform.any_op) -> !transform.any_op
 %8 = transform.cast %7 : !transform.any_op to !transform.op<"tensor.pad">
 %9 =  transform.structured.hoist_pad %8 by 1 loops : (!transform.op<"tensor.pad">) -> !transform.any_op
+transform.iree.apply_patterns %variant_op {canonicalization, cse, fold_tensor_subsets, licm, tiling_canonicalization} : (!transform.any_op) -> ()
+transform.iree.apply_patterns %variant_op {canonicalization, cse, licm, tiling_canonicalization} : (!transform.any_op) -> ()
 %10 = transform.structured.match ops{["tensor.parallel_insert_slice"]} in %variant_op : (!transform.any_op) -> !transform.any_op
 %11 = transform.structured.insert_slice_to_copy %10 : (!transform.any_op) -> !transform.any_op
 transform.iree.apply_patterns %variant_op { canonicalization, cse, licm, tiling_canonicalization } : (!transform.any_op) -> ()
 %12 = transform.get_producer_of_operand %6[0] : (!transform.any_op) -> !transform.any_op
 %13, %14 = transform.structured.tile_to_forall_op %12 num_threads [16, 8] tile_sizes []{ mapping = [#gpu.linear<x>,#gpu.linear<y>] }: (!transform.any_op) -> (!transform.any_op, !transform.any_op)
+transform.iree.apply_patterns %variant_op {canonicalization, cse, licm, tiling_canonicalization} : (!transform.any_op) -> ()
 %15 = transform.structured.match ops{["scf.if"]} in %13 : (!transform.any_op) -> !transform.any_op
 transform.scf.take_assumed_branch %15 take_else_branch : (!transform.any_op) -> ()
 %16 = transform.get_producer_of_operand %6[1] : (!transform.any_op) -> !transform.any_op
 %17, %18 = transform.structured.tile_to_forall_op %16 num_threads [2, 64] { mapping = [#gpu.linear<y>,#gpu.linear<x>] }: (!transform.any_op) -> (!transform.any_op, !transform.any_op)
+transform.iree.apply_patterns %variant_op {canonicalization, cse, licm, tiling_canonicalization} : (!transform.any_op) -> ()
 %19 = transform.structured.match ops{["scf.if"]} in %17 : (!transform.any_op) -> !transform.any_op
 transform.scf.take_assumed_branch %19 take_else_branch : (!transform.any_op) -> ()
 %20, %21 = transform.structured.tile_to_forall_op %11 num_threads [2, 64] { mapping = [#gpu.linear<y>,#gpu.linear<x>] }: (!transform.any_op) -> (!transform.any_op, !transform.any_op)
+transform.iree.apply_patterns %variant_op {canonicalization, cse, licm, tiling_canonicalization} : (!transform.any_op) -> ()
 transform.iree.apply_patterns %variant_op { canonicalization, cse, licm, tiling_canonicalization } : (!transform.any_op) -> ()
 transform.structured.masked_vectorize %14 vector_sizes [8, 2] : !transform.any_op
 transform.structured.masked_vectorize %18 vector_sizes [8, 2] : !transform.any_op
@@ -61,6 +67,9 @@ transform.structured.masked_vectorize %21 vector_sizes [64, 2] : !transform.any_
 %28 = transform.structured.match ops{["func.func"]} in %variant_op : (!transform.any_op) -> !transform.any_op
 transform.iree.apply_patterns %28 { rank_reducing_linalg, rank_reducing_vector } : (!transform.any_op) -> ()
 %29 = transform.structured.vectorize %28 : (!transform.any_op) -> !transform.any_op
+
+
+
 transform.iree.apply_patterns %variant_op { canonicalization, cse, licm, tiling_canonicalization } : (!transform.any_op) -> ()
 %31 = transform.structured.match ops{["func.func"]} in %variant_op : (!transform.any_op) -> !transform.any_op
 transform.structured.hoist_redundant_tensor_subsets %31 : (!transform.any_op) -> ()
@@ -81,4 +90,5 @@ transform.iree.apply_patterns %30 {fold_memref_aliases, canonicalization, cse, l
 %38 = transform.structured.match ops{["func.func"]} in %30 : (!transform.any_op) -> !transform.any_op
 transform.iree.hoist_static_alloc %38 : (!transform.any_op) -> ()
 }
+
 ```
